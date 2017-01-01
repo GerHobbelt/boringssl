@@ -136,14 +136,18 @@
 #include <stdalign.h>
 #endif
 
-#if defined(OPENSSL_THREADS) && \
+#if defined(OPENSSL_THREADS) && defined(DMalterlib)
+#define OPENSSL_MALTERLIB_THREADS
+#endif
+
+#if defined(OPENSSL_THREADS) && !defined(OPENSSL_MALTERLIB_THREADS) && \
     (!defined(OPENSSL_WINDOWS) || defined(__MINGW32__))
 #include <pthread.h>
 #define OPENSSL_PTHREADS
 #endif
 
 #if defined(OPENSSL_THREADS) && !defined(OPENSSL_PTHREADS) && \
-    defined(OPENSSL_WINDOWS)
+    defined(OPENSSL_WINDOWS) && !defined(OPENSSL_MALTERLIB_THREADS)
 #define OPENSSL_WINDOWS_THREADS
 #endif
 
@@ -652,6 +656,25 @@ typedef INIT_ONCE CRYPTO_once_t;
 #elif defined(OPENSSL_PTHREADS)
 typedef pthread_once_t CRYPTO_once_t;
 #define CRYPTO_ONCE_INIT PTHREAD_ONCE_INIT
+#elif defined(OPENSSL_MALTERLIB_THREADS)
+#  ifndef DMibEnableSafeCheck
+#    if (defined(DMibDebug) || defined(_DEBUG)) || defined(DConfig_ReleaseTesting)
+#      define DMibEnableSafeCheck 1
+#    else
+#      define DMibEnableSafeCheck 0
+#    endif
+#  endif
+typedef size_t CRYPTO_once_t
+  [
+#   if DMibEnableSafeCheck > 0
+    ((sizeof(uint32_t) + sizeof(size_t) - 1)) / sizeof(size_t)
+    + 3
+    + ((sizeof(uint32_t) + sizeof(size_t) - 1)) / sizeof(size_t)
+#   else
+    (sizeof(uint32_t) * 2) / sizeof(size_t)
+#   endif
+  ];
+#define CRYPTO_ONCE_INIT {0}
 #else
 #error "Unknown threading library"
 #endif
@@ -810,6 +833,17 @@ typedef SRWLOCK CRYPTO_MUTEX;
 #elif defined(OPENSSL_PTHREADS)
 typedef pthread_rwlock_t CRYPTO_MUTEX;
 #define CRYPTO_MUTEX_INIT PTHREAD_RWLOCK_INITIALIZER
+#elif defined(OPENSSL_MALTERLIB_THREADS)
+typedef struct crypto_mutex_st {
+  size_t data
+  [
+    16
+#   if DMibEnableSafeCheck > 0
+      + 5
+#   endif
+  ];
+} CRYPTO_MUTEX;
+#define CRYPTO_MUTEX_INIT { 0 }
 #else
 #error "Unknown threading library"
 #endif

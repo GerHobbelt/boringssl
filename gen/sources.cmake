@@ -429,6 +429,7 @@ set(
   crypto/spx/spx_wots.c
   crypto/stack/stack.c
   crypto/thread.c
+  crypto/thread_malterlib.cpp
   crypto/thread_none.c
   crypto/thread_pthread.c
   crypto/thread_win.c
