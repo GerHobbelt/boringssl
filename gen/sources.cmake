@@ -440,6 +440,7 @@ set(
   crypto/spake2plus/spake2plus.cc
   crypto/stack/stack.cc
   crypto/thread.cc
+  crypto/thread_malterlib.cpp
   crypto/thread_none.cc
   crypto/thread_pthread.cc
   crypto/thread_win.cc
