@@ -132,6 +132,30 @@ struct crypto_ex_data_func_st {
   CRYPTO_EX_DATA_FUNCS *next;
 };
 
+
+static void CRYPTO_cleanup_ex_data(void *context) {
+  CRYPTO_EX_DATA_CLASS *ex_data_class = (CRYPTO_EX_DATA_CLASS *)context;
+
+  uint32_t num_funcs = CRYPTO_atomic_load_u32(&ex_data_class->num_funcs);
+  // |CRYPTO_get_ex_new_index| will not allocate indices beyond |INT_MAX|.
+  assert(num_funcs <= (size_t)(INT_MAX - ex_data_class->num_reserved));
+
+  // Defer dereferencing |ex_data_class->funcs| and |funcs->next|. It must come
+  // after the |num_funcs| comparison to be correctly synchronized.
+  CRYPTO_EX_DATA_FUNCS *funcs = ex_data_class->funcs;
+  for (uint32_t i = 0; i < num_funcs; i++) {
+    CRYPTO_EX_DATA_FUNCS *next_funcs = funcs->next;
+    OPENSSL_free(funcs);
+    funcs = next_funcs;
+  }
+
+  ex_data_class->funcs = NULL;
+  uint32_t old_num_funcs = CRYPTO_atomic_load_u32(&ex_data_class->num_funcs);
+  (void)old_num_funcs;
+  CRYPTO_atomic_store_u32(&ex_data_class->num_funcs, 0);
+  assert(old_num_funcs == num_funcs);
+}
+
 int CRYPTO_get_ex_new_index_ex(CRYPTO_EX_DATA_CLASS *ex_data_class, long argl,
                                void *argp, CRYPTO_EX_free *free_func) {
   CRYPTO_EX_DATA_FUNCS *funcs = OPENSSL_malloc(sizeof(CRYPTO_EX_DATA_FUNCS));
@@ -156,6 +180,7 @@ int CRYPTO_get_ex_new_index_ex(CRYPTO_EX_DATA_CLASS *ex_data_class, long argl,
 
   // Append |funcs| to the linked list.
   if (ex_data_class->last == NULL) {
+    CRYPTO_add_cleanup(&CRYPTO_cleanup_ex_data, ex_data_class);
     assert(num_funcs == 0);
     ex_data_class->funcs = funcs;
     ex_data_class->last = funcs;

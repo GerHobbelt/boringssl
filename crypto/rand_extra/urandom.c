@@ -132,6 +132,13 @@ static void maybe_set_extra_getrandom_flags(void) {
 
 static CRYPTO_once_t rand_once = CRYPTO_ONCE_INIT;
 
+static void cleanup_urandom(void *context) {
+  if (urandom_fd != -1 && urandom_fd != kHaveGetrandom) {
+    close(urandom_fd);
+    urandom_fd = -1;
+  }
+}
+
 // init_once initializes the state of this module to values previously
 // requested. This is the only function that modifies |urandom_fd|, which may be
 // read safely after calling the once.
@@ -186,6 +193,7 @@ static void init_once(void) {
   }
 
   urandom_fd = fd;
+  CRYPTO_add_cleanup(&cleanup_urandom, NULL);
 }
 
 static CRYPTO_once_t wait_for_entropy_once = CRYPTO_ONCE_INIT;
