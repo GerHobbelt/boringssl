@@ -208,6 +208,10 @@ static X509 *x509_parse(CBS *cbs, CRYPTO_BUFFER *buf) {
     // TODO(https://crbug.com/boringssl/364): |X509_VERSION_1| should
     // also be rejected here. This means an explicitly-encoded X.509v1
     // version. v1 is DEFAULT, so DER requires it be omitted.
+#ifdef OPENSSL_ALLOW_MALFORMED_X509_VERSION
+    if (version == 3)
+      version = 2;
+#endif
     if (version < X509_VERSION_1 || version > X509_VERSION_3) {
       OPENSSL_PUT_ERROR(X509, X509_R_INVALID_VERSION);
       goto err;
