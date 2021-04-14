@@ -4,6 +4,7 @@ macro(append_to_parent_scope var)
 endmacro()
 
 function(add_perlasm_target dest src)
+  set(dest ${CMAKE_CURRENT_BINARY_DIR}/${dest})
   get_filename_component(dir ${dest} DIRECTORY)
   if(dir STREQUAL "")
     set(dir ".")
