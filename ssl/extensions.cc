@@ -431,8 +431,8 @@ bool tls1_check_group_id(const SSL_HANDSHAKE *hs, uint16_t group_id) {
 static const uint16_t kVerifySignatureAlgorithms[] = {
     // List our preferred algorithms first.
     SSL_SIGN_ECDSA_SECP256R1_SHA256,
-    SSL_SIGN_RSA_PSS_RSAE_SHA256,
     SSL_SIGN_RSA_PKCS1_SHA256,
+    SSL_SIGN_RSA_PSS_RSAE_SHA256,
 
     // Larger hashes are acceptable.
     SSL_SIGN_ECDSA_SECP384R1_SHA384,
@@ -452,8 +452,8 @@ static const uint16_t kSignSignatureAlgorithms[] = {
     // List our preferred algorithms first.
     SSL_SIGN_ED25519,
     SSL_SIGN_ECDSA_SECP256R1_SHA256,
-    SSL_SIGN_RSA_PSS_RSAE_SHA256,
     SSL_SIGN_RSA_PKCS1_SHA256,
+    SSL_SIGN_RSA_PSS_RSAE_SHA256,
 
     // If needed, sign larger hashes.
     //
