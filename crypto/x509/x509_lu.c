@@ -65,6 +65,8 @@
 #include "internal.h"
 
 
+static CRYPTO_EX_DATA_CLASS g_ex_data_class = CRYPTO_EX_DATA_CLASS_INIT;
+
 static int X509_OBJECT_idx_by_subject(STACK_OF(X509_OBJECT) *h, int type,
                                       X509_NAME *name);
 static X509_OBJECT *X509_OBJECT_retrieve_by_subject(STACK_OF(X509_OBJECT) *h,
@@ -160,6 +162,7 @@ X509_STORE *X509_STORE_new(void) {
   ret->objs = sk_X509_OBJECT_new(x509_object_cmp_sk);
   ret->get_cert_methods = sk_X509_LOOKUP_new_null();
   ret->param = X509_VERIFY_PARAM_new();
+  CRYPTO_new_ex_data(&ret->ex_data);
   if (ret->objs == NULL ||
       ret->get_cert_methods == NULL ||
       ret->param == NULL) {
@@ -175,6 +178,14 @@ int X509_STORE_up_ref(X509_STORE *store) {
   return 1;
 }
 
+int X509_STORE_set_ex_data(X509_STORE *vfy, int idx, void *arg) {
+  return CRYPTO_set_ex_data(&vfy->ex_data, idx, arg);
+}
+
+void *X509_STORE_get_ex_data(const X509_STORE *vfy, int idx) {
+  return CRYPTO_get_ex_data(&vfy->ex_data, idx);
+}
+
 void X509_STORE_free(X509_STORE *vfy) {
   if (vfy == NULL) {
     return;
@@ -188,6 +199,7 @@ void X509_STORE_free(X509_STORE *vfy) {
   sk_X509_LOOKUP_pop_free(vfy->get_cert_methods, X509_LOOKUP_free);
   sk_X509_OBJECT_pop_free(vfy->objs, X509_OBJECT_free);
   X509_VERIFY_PARAM_free(vfy->param);
+  CRYPTO_free_ex_data(&g_ex_data_class, vfy, &vfy->ex_data);
   OPENSSL_free(vfy);
 }
 
