@@ -2888,6 +2888,9 @@ OPENSSL_EXPORT int X509_STORE_up_ref(X509_STORE *store);
 // X509_STORE_free releases memory associated with |store|.
 OPENSSL_EXPORT void X509_STORE_free(X509_STORE *store);
 
+OPENSSL_EXPORT int X509_STORE_set_ex_data(X509_STORE *vfy, int idx, void *arg);
+OPENSSL_EXPORT void *X509_STORE_get_ex_data(const X509_STORE *vfy, int idx);
+
 // X509_STORE_add_cert adds |x509| to |store| as a trusted certificate. It
 // returns one on success and zero on error. This function internally increments
 // |x509|'s reference count, so the caller retains ownership of |x509|.

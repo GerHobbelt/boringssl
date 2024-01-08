@@ -342,6 +342,7 @@ struct x509_store_st {
   // Callbacks for various operations
   X509_STORE_CTX_verify_cb verify_cb;       // error callback
 
+  CRYPTO_EX_DATA ex_data;
   CRYPTO_refcount_t references;
 } /* X509_STORE */;
 
