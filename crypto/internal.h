@@ -1007,6 +1007,54 @@ static inline uint64_t CRYPTO_bswap8(uint64_t x) {
 }
 #endif
 
+/*
+ * Macros for conditional endianness coversions.
+ *
+ * CRYPTO_bswap[2|4|8]    do unconditional byte swap, regardless of
+ *                        platform endianness
+ * CRYPTO_BSWAP[2|4|8]    do byte swap on little endian
+ * BSWAP_[16|32|64]       do byte swap on big endian
+ * BSWAP_[16|32|64]_BITOP are for compile time constant initializer
+ *                        since they could be slow so not used in
+ *                        running code
+ */
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define CRYPTO_BSWAP2(x) (CRYPTO_bswap2(x))
+#define CRYPTO_BSWAP4(x) (CRYPTO_bswap4(x))
+#define CRYPTO_BSWAP8(x) (CRYPTO_bswap8(x))
+#define BSWAP_16(x) (x)
+#define BSWAP_32(x) (x)
+#define BSWAP_64(x) (x)
+#define BSWAP_16_BITOP(x) (x)
+#define BSWAP_32_BITOP(x) (x)
+#define BSWAP_64_BITOP(x) (x)
+#define BSWAP_ULONG(x) (x)
+#else
+#define CRYPTO_BSWAP2(x) (x)
+#define CRYPTO_BSWAP4(x) (x)
+#define CRYPTO_BSWAP8(x) (x)
+#define BSWAP_16(x) (CRYPTO_bswap2(x))
+#define BSWAP_32(x) (CRYPTO_bswap4(x))
+#define BSWAP_64(x) (CRYPTO_bswap8(x))
+#define BSWAP_16_BITOP(x) \
+  (((((uint16_t)(x)) & 0x00ff) << 8) | \
+   ((((uint16_t)(x)) >> 8) & 0x00ff))
+#define BSWAP_32_BITOP(x) \
+  (((((uint32_t)(x)) & 0x000000ff) << 24) | \
+   ((((uint32_t)(x)) & 0x0000ff00) <<  8) | \
+   ((((uint32_t)(x)) >>  8) & 0x0000ff00) | \
+   ((((uint32_t)(x)) >> 24) & 0x000000ff))
+#define BSWAP_64_BITOP(x) \
+  ((uint64_t)BSWAP_32_BITOP((uint64_t)(x) & 0x00000000ffffffff) << 32 | \
+   (uint64_t)BSWAP_32_BITOP((uint64_t)(x) >> 32))
+#if defined(OPENSSL_64_BIT)
+#define BSWAP_ULONG(x) BSWAP_64(x)
+#elif defined(OPENSSL_32_BIT)
+#define BSWAP_ULONG(x) BSWAP_32(x)
+#else
+#error "Must define either OPENSSL_32_BIT or OPENSSL_64_BIT"
+#endif
+#endif
 
 // Language bug workarounds.
 //
@@ -1107,52 +1155,67 @@ static inline void CRYPTO_store_u16_be(void *out, uint16_t v) {
 static inline uint32_t CRYPTO_load_u32_le(const void *in) {
   uint32_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
-  return v;
+  return BSWAP_32(v);
 }
 
 static inline void CRYPTO_store_u32_le(void *out, uint32_t v) {
+  v = BSWAP_32(v);
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline uint32_t CRYPTO_load_u32_be(const void *in) {
   uint32_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
-  return CRYPTO_bswap4(v);
+  return CRYPTO_BSWAP4(v);
 }
 
 static inline void CRYPTO_store_u32_be(void *out, uint32_t v) {
-  v = CRYPTO_bswap4(v);
+  v = CRYPTO_BSWAP4(v);
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline uint64_t CRYPTO_load_u64_le(const void *in) {
   uint64_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
-  return v;
+  return BSWAP_64(v);
 }
 
 static inline void CRYPTO_store_u64_le(void *out, uint64_t v) {
+  v = BSWAP_64(v);
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline uint64_t CRYPTO_load_u64_be(const void *ptr) {
   uint64_t ret;
   OPENSSL_memcpy(&ret, ptr, sizeof(ret));
-  return CRYPTO_bswap8(ret);
+  return CRYPTO_BSWAP8(ret);
 }
 
 static inline void CRYPTO_store_u64_be(void *out, uint64_t v) {
-  v = CRYPTO_bswap8(v);
+  v = CRYPTO_BSWAP8(v);
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline crypto_word_t CRYPTO_load_word_le(const void *in) {
   crypto_word_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
-  return v;
+#if defined(OPENSSL_64_BIT)
+  static_assert(sizeof(v) == 8, "crypto_word_t has unexpected size");
+  return BSWAP_64(v);
+#else
+  static_assert(sizeof(v) == 4, "crypto_word_t has unexpected size");
+  return BSWAP_32(v);
+#endif
 }
 
 static inline void CRYPTO_store_word_le(void *out, crypto_word_t v) {
+#if defined(OPENSSL_64_BIT)
+  static_assert(sizeof(v) == 8, "crypto_word_t has unexpected size");
+  v = BSWAP_64(v);
+#else
+  static_assert(sizeof(v) == 4, "crypto_word_t has unexpected size");
+  v = BSWAP_32(v);
+#endif
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
@@ -1161,10 +1224,10 @@ static inline crypto_word_t CRYPTO_load_word_be(const void *in) {
   OPENSSL_memcpy(&v, in, sizeof(v));
 #if defined(OPENSSL_64_BIT)
   static_assert(sizeof(v) == 8, "crypto_word_t has unexpected size");
-  return CRYPTO_bswap8(v);
+  return CRYPTO_BSWAP8(v);
 #else
   static_assert(sizeof(v) == 4, "crypto_word_t has unexpected size");
-  return CRYPTO_bswap4(v);
+  return CRYPTO_BSWAP4(v);
 #endif
 }
 
