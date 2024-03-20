@@ -1155,67 +1155,52 @@ static inline void CRYPTO_store_u16_be(void *out, uint16_t v) {
 static inline uint32_t CRYPTO_load_u32_le(const void *in) {
   uint32_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
-  return BSWAP_32(v);
+  return v;
 }
 
 static inline void CRYPTO_store_u32_le(void *out, uint32_t v) {
-  v = BSWAP_32(v);
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline uint32_t CRYPTO_load_u32_be(const void *in) {
   uint32_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
-  return CRYPTO_BSWAP4(v);
+  return CRYPTO_bswap4(v);
 }
 
 static inline void CRYPTO_store_u32_be(void *out, uint32_t v) {
-  v = CRYPTO_BSWAP4(v);
+  v = CRYPTO_bswap4(v);
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline uint64_t CRYPTO_load_u64_le(const void *in) {
   uint64_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
-  return BSWAP_64(v);
+  return v;
 }
 
 static inline void CRYPTO_store_u64_le(void *out, uint64_t v) {
-  v = BSWAP_64(v);
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline uint64_t CRYPTO_load_u64_be(const void *ptr) {
   uint64_t ret;
   OPENSSL_memcpy(&ret, ptr, sizeof(ret));
-  return CRYPTO_BSWAP8(ret);
+  return CRYPTO_bswap8(ret);
 }
 
 static inline void CRYPTO_store_u64_be(void *out, uint64_t v) {
-  v = CRYPTO_BSWAP8(v);
+  v = CRYPTO_bswap8(v);
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline crypto_word_t CRYPTO_load_word_le(const void *in) {
   crypto_word_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
-#if defined(OPENSSL_64_BIT)
-  static_assert(sizeof(v) == 8, "crypto_word_t has unexpected size");
-  return BSWAP_64(v);
-#else
-  static_assert(sizeof(v) == 4, "crypto_word_t has unexpected size");
-  return BSWAP_32(v);
-#endif
+  return v;
 }
 
 static inline void CRYPTO_store_word_le(void *out, crypto_word_t v) {
-#if defined(OPENSSL_64_BIT)
-  static_assert(sizeof(v) == 8, "crypto_word_t has unexpected size");
-  v = BSWAP_64(v);
-#else
-  static_assert(sizeof(v) == 4, "crypto_word_t has unexpected size");
-  v = BSWAP_32(v);
-#endif
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
@@ -1224,10 +1209,10 @@ static inline crypto_word_t CRYPTO_load_word_be(const void *in) {
   OPENSSL_memcpy(&v, in, sizeof(v));
 #if defined(OPENSSL_64_BIT)
   static_assert(sizeof(v) == 8, "crypto_word_t has unexpected size");
-  return CRYPTO_BSWAP8(v);
+  return CRYPTO_bswap8(v);
 #else
   static_assert(sizeof(v) == 4, "crypto_word_t has unexpected size");
-  return CRYPTO_BSWAP4(v);
+  return CRYPTO_bswap4(v);
 #endif
 }
 
