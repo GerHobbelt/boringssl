@@ -1216,6 +1216,17 @@ static inline crypto_word_t CRYPTO_load_word_be(const void *in) {
 #endif
 }
 
+static inline void CRYPTO_store_word_be(void *out, crypto_word_t v) {
+#if defined(OPENSSL_64_BIT)
+  static_assert(sizeof(v) == 8, "crypto_word_t has unexpected size");
+  v = CRYPTO_bswap8(v);
+#else
+  static_assert(sizeof(v) == 4, "crypto_word_t has unexpected size");
+  v = CRYPTO_bswap4(v);
+#endif
+  OPENSSL_memcpy(out, &v, sizeof(v));
+}
+
 
 // Bit rotation functions.
 //
