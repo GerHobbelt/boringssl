@@ -70,7 +70,11 @@ void bn_big_endian_to_words(BN_ULONG *out, size_t out_len, const uint8_t *in,
   // Load whole words.
   while (in_len >= sizeof(BN_ULONG)) {
     in_len -= sizeof(BN_ULONG);
+#if __BYTE_ORDER == __BIG_ENDIAN
+    out[0] = CRYPTO_load_word_le(in + in_len);
+#else
     out[0] = CRYPTO_load_word_be(in + in_len);
+#endif
     out++;
     out_len--;
   }
@@ -218,12 +222,13 @@ void bn_assert_fits_in_bytes(const BIGNUM *bn, size_t num) {
   size_t tot_bytes = bn->width * sizeof(BN_ULONG);
   if (tot_bytes > num) {
 #if __BYTE_ORDER == __BIG_ENDIAN
-  for (size_t i = num; i < tot_bytes; i++) {
-    size_t word_end = (i / sizeof(BN_ULONG) + 1) * sizeof(BN_ULONG);
-    size_t remainder_of_word = i % sizeof(BN_ULONG);
-    size_t idx = word_end - remainder_of_word - 1;
-    assert(bytes[idx] == 0);
-  }
+    for (size_t i = num; i < tot_bytes; i++) {
+      size_t word_end = (i / sizeof(BN_ULONG) + 1) * sizeof(BN_ULONG);
+      size_t remainder_of_word = i % sizeof(BN_ULONG);
+      assert(bytes[word_end - remainder_of_word - 1] == 0);
+      (void)word_end;
+      (void)remainder_of_word;
+    }
 #else
     CONSTTIME_DECLASSIFY(bytes + num, tot_bytes - num);
     for (size_t i = num; i < tot_bytes; i++) {
@@ -246,11 +251,22 @@ void bn_words_to_big_endian(uint8_t *out, size_t out_len, const BN_ULONG *in,
   }
 
 #if __BYTE_ORDER == __BIG_ENDIAN
+  size_t bytes_left = num_bytes;
   for (size_t i = 0; i < in_len; i++) {
+    if (bytes_left < sizeof(BN_ULONG)) {
+      // Load last partial word
+      OPENSSL_memcpy(out + out_len - (i * sizeof(BN_ULONG)) - bytes_left,
+                     bytes + ((i + 1) * sizeof(BN_ULONG)) - bytes_left,
+                     bytes_left);
+      bytes_left = 0;
+      break;
+    }
     OPENSSL_memcpy(out + out_len - ((i + 1) * sizeof(BN_ULONG)),
                    bytes + (i * sizeof(BN_ULONG)),
                    sizeof(BN_ULONG));
+    bytes_left -= sizeof(BN_ULONG);
   }
+  assert(bytes_left == 0);
 #else
   // For little-endian platforms, the internal representation is
   // also little-endian as bytes. We can simply copy it in reverse.
