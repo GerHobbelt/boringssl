@@ -1189,21 +1189,34 @@ static inline void CRYPTO_store_u32_be(void *out, uint32_t v) {
 static inline uint64_t CRYPTO_load_u64_le(const void *in) {
   uint64_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
+#if __BYTE_ORDER == __BIG_ENDIAN
+  return CRYPTO_bswap8(v);
+#else
   return v;
+#endif
 }
 
 static inline void CRYPTO_store_u64_le(void *out, uint64_t v) {
+#if __BYTE_ORDER == __BIG_ENDIAN
+  v = CRYPTO_bswap8(v);
+#endif
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 
 static inline uint64_t CRYPTO_load_u64_be(const void *ptr) {
   uint64_t ret;
   OPENSSL_memcpy(&ret, ptr, sizeof(ret));
+#if __BYTE_ORDER == __BIG_ENDIAN
+  return ret;
+#else
   return CRYPTO_bswap8(ret);
+#endif
 }
 
 static inline void CRYPTO_store_u64_be(void *out, uint64_t v) {
+#if __BYTE_ORDER != __BIG_ENDIAN
   v = CRYPTO_bswap8(v);
+#endif
   OPENSSL_memcpy(out, &v, sizeof(v));
 }
 

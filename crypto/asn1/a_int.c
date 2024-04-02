@@ -286,11 +286,7 @@ int ASN1_ENUMERATED_set(ASN1_ENUMERATED *a, long v) {
 
 static int asn1_string_set_uint64(ASN1_STRING *out, uint64_t v, int type) {
   uint8_t buf[sizeof(uint64_t)];
-#if __BYTE_ORDER == __BIG_ENDIAN
-  CRYPTO_store_u64_le(buf, v);
-#else
   CRYPTO_store_u64_be(buf, v);
-#endif
   size_t leading_zeros;
   for (leading_zeros = 0; leading_zeros < sizeof(buf); leading_zeros++) {
     if (buf[leading_zeros] != 0) {
@@ -325,11 +321,7 @@ static int asn1_string_get_abs_uint64(uint64_t *out, const ASN1_STRING *a,
     return 0;
   }
   OPENSSL_memcpy(buf + sizeof(buf) - a->length, a->data, a->length);
-#if __BYTE_ORDER == __BIG_ENDIAN
-  *out = CRYPTO_load_u64_le(buf);
-#else
   *out = CRYPTO_load_u64_be(buf);
-#endif
   return 1;
 }
 
