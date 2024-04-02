@@ -548,21 +548,37 @@ int CBB_add_asn1_int64_with_tag(CBB *cbb, int64_t value, CBS_ASN1_TAG tag) {
 
   uint8_t bytes[sizeof(int64_t)];
   memcpy(bytes, &value, sizeof(value));
+#if __BYTE_ORDER == __BIG_ENDIAN
+  int start = 0;
+  // Skip leading sign-extension bytes unless they are necessary.
+  while (start < 8 && (bytes[start] == 0xff && (bytes[start + 1] & 0x80))) {
+    start++;
+  }
+#else
   int start = 7;
   // Skip leading sign-extension bytes unless they are necessary.
   while (start > 0 && (bytes[start] == 0xff && (bytes[start - 1] & 0x80))) {
     start--;
   }
+#endif
 
   CBB child;
   if (!CBB_add_asn1(cbb, &child, tag)) {
     goto err;
   }
+#if __BYTE_ORDER == __BIG_ENDIAN
+  for (int i = start; i < 8; i++) {
+    if (!CBB_add_u8(&child, bytes[i])) {
+      return 0;
+    }
+  }
+#else
   for (int i = start; i >= 0; i--) {
     if (!CBB_add_u8(&child, bytes[i])) {
       goto err;
     }
   }
+#endif
   return CBB_flush(cbb);
 
 err:
