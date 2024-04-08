@@ -162,10 +162,19 @@ static void big_endian_to_words(BN_ULONG *out, size_t num_words,
   assert(len <= num_words * sizeof(BN_ULONG));
   // Ensure any excess bytes are zeroed.
   OPENSSL_memset(out, 0, num_words * sizeof(BN_ULONG));
+#if __BYTE_ORDER == __BIG_ENDIAN
+  size_t words_to_write = (len / sizeof(BN_ULONG));
+  for (size_t i = 0; i < words_to_write; i++) {
+    OPENSSL_memcpy(out + words_to_write - i - 1,
+                   (void *)in + (i * sizeof(BN_ULONG)),
+                   sizeof(BN_ULONG));
+  }
+#else
   uint8_t *out_u8 = (uint8_t *)out;
   for (size_t i = 0; i < len; i++) {
     out_u8[len - 1 - i] = in[i];
   }
+#endif
 }
 
 // hash_to_field implements the operation described in section 5.2
