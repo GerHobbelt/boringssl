@@ -188,6 +188,11 @@ void BORINGSSL_keccak_absorb(struct BORINGSSL_keccak_st *ctx, const uint8_t *in,
   const size_t rate_words = ctx->rate_bytes / 8;
   // XOR the input. Accessing |ctx->state| as a |uint8_t*| is allowed by strict
   // aliasing because we require |uint8_t| to be a character type.
+#if __BYTE_ORDER == __BIG_ENDIAN
+  for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
+    ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
+  }
+#endif
   uint8_t *state_bytes = (uint8_t *)ctx->state;
 
   // Absorb partial block.
@@ -247,6 +252,11 @@ static void keccak_finalize(struct BORINGSSL_keccak_st *ctx) {
   uint8_t *state_bytes = (uint8_t *)ctx->state;
   state_bytes[ctx->absorb_offset] ^= terminator;
   state_bytes[ctx->rate_bytes - 1] ^= 0x80;
+#if __BYTE_ORDER == __BIG_ENDIAN
+  for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
+    ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
+  }
+#endif
   keccak_f(ctx->state);
 }
 
@@ -260,6 +270,11 @@ void BORINGSSL_keccak_squeeze(struct BORINGSSL_keccak_st *ctx, uint8_t *out,
   // Accessing |ctx->state| as a |uint8_t*| is allowed by strict aliasing
   // because we require |uint8_t| to be a character type.
   const uint8_t *state_bytes = (const uint8_t *)ctx->state;
+#if __BYTE_ORDER == __BIG_ENDIAN
+  for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
+    ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
+  }
+#endif
   while (out_len) {
     if (ctx->squeeze_offset == ctx->rate_bytes) {
       keccak_f(ctx->state);
@@ -275,5 +290,24 @@ void BORINGSSL_keccak_squeeze(struct BORINGSSL_keccak_st *ctx, uint8_t *out,
     out += todo;
     out_len -= todo;
     ctx->squeeze_offset += todo;
+    if (ctx->squeeze_offset == ctx->rate_bytes) {
+#if __BYTE_ORDER == __BIG_ENDIAN
+      for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
+        ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
+      }
+#endif
+      keccak_f(ctx->state);
+#if __BYTE_ORDER == __BIG_ENDIAN
+      for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
+        ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
+      }
+#endif
+      ctx->squeeze_offset = 0;
+    }
   }
+#if __BYTE_ORDER == __BIG_ENDIAN
+  for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
+    ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
+  }
+#endif
 }
