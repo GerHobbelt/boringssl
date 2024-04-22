@@ -96,10 +96,14 @@ static size_t CRYPTO_xts128_encrypt(const XTS128_CONTEXT *ctx,
 
     unsigned int carry, res;
 
-    res = 0x87 & (((int)tweak.d[3]) >> 31);
+    res = 0x87 & (((int)CRYPTO_load_u32_le(&tweak.d[3])) >> 31);
+    tweak.u[0] = CRYPTO_load_u64_le(&tweak.u[0]);
+    tweak.u[1] = CRYPTO_load_u64_le(&tweak.u[1]);
     carry = (unsigned int)(tweak.u[0] >> 63);
     tweak.u[0] = (tweak.u[0] << 1) ^ res;
     tweak.u[1] = (tweak.u[1] << 1) | carry;
+    tweak.u[0] = CRYPTO_load_u64_le(&tweak.u[0]);
+    tweak.u[1] = CRYPTO_load_u64_le(&tweak.u[1]);
   }
   if (enc) {
     for (i = 0; i < len; ++i) {
@@ -121,10 +125,14 @@ static size_t CRYPTO_xts128_encrypt(const XTS128_CONTEXT *ctx,
 
     unsigned int carry, res;
 
-    res = 0x87 & (((int)tweak.d[3]) >> 31);
+    res = 0x87 & (((int)CRYPTO_load_u32_le(&tweak.d[3])) >> 31);
+    tweak.u[0] = CRYPTO_load_u64_le(&tweak.u[0]);
+    tweak.u[1] = CRYPTO_load_u64_le(&tweak.u[1]);
     carry = (unsigned int)(tweak.u[0] >> 63);
     tweak1.u[0] = (tweak.u[0] << 1) ^ res;
     tweak1.u[1] = (tweak.u[1] << 1) | carry;
+    tweak.u[0] = CRYPTO_load_u64_le(&tweak.u[0]);
+    tweak.u[1] = CRYPTO_load_u64_le(&tweak.u[1]);
     OPENSSL_memcpy(scratch.c, inp, 16);
     scratch.u[0] ^= tweak1.u[0];
     scratch.u[1] ^= tweak1.u[1];
