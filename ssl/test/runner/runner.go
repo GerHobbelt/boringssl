@@ -49,6 +49,7 @@ import (
 	"boringssl.googlesource.com/boringssl/ssl/test/runner/hpke"
 	"boringssl.googlesource.com/boringssl/util/testresult"
 	"golang.org/x/crypto/cryptobyte"
+	"golang.org/x/sys/cpu"
 )
 
 var (
@@ -999,7 +1000,13 @@ func doExchange(test *testCase, config *Config, conn net.Conn, isResume bool, tr
 		if _, err := io.ReadFull(tlsConn, secretLenBytes); err != nil {
 			return err
 		}
-		secretLen := binary.LittleEndian.Uint16(secretLenBytes)
+
+		var secretLen uint16
+		if cpu.IsBigEndian {
+			secretLen = binary.BigEndian.Uint16(secretLenBytes)
+		} else {
+			secretLen = binary.LittleEndian.Uint16(secretLenBytes)
+		}
 
 		theirReadSecret := make([]byte, secretLen)
 		theirWriteSecret := make([]byte, secretLen)
