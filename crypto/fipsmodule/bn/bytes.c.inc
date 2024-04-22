@@ -176,10 +176,6 @@ BIGNUM *BN_lebin2bn(const uint8_t *in, size_t len, BIGNUM *ret) {
 
 #if __BYTE_ORDER == __BIG_ENDIAN
   bn_little_endian_to_big_endian_words(ret->d, ret->width, in, len);
-  // for (size_t i = 0; i < len; i += BN_BYTES) {
-  //   CRYPTO_store_word_le(((int8_t *)ret->d) + i,
-  //                        CRYPTO_load_word_be(in + i));
-  // }
 #else
   // Make sure the top bytes will be zeroed.
   ret->d[num_words - 1] = 0;

@@ -1007,54 +1007,6 @@ static inline uint64_t CRYPTO_bswap8(uint64_t x) {
 }
 #endif
 
-/*
- * Macros for conditional endianness coversions.
- *
- * CRYPTO_bswap[2|4|8]    do unconditional byte swap, regardless of
- *                        platform endianness
- * CRYPTO_BSWAP[2|4|8]    do byte swap on little endian
- * BSWAP_[16|32|64]       do byte swap on big endian
- * BSWAP_[16|32|64]_BITOP are for compile time constant initializer
- *                        since they could be slow so not used in
- *                        running code
- */
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#define CRYPTO_BSWAP2(x) (CRYPTO_bswap2(x))
-#define CRYPTO_BSWAP4(x) (CRYPTO_bswap4(x))
-#define CRYPTO_BSWAP8(x) (CRYPTO_bswap8(x))
-#define BSWAP_16(x) (x)
-#define BSWAP_32(x) (x)
-#define BSWAP_64(x) (x)
-#define BSWAP_16_BITOP(x) (x)
-#define BSWAP_32_BITOP(x) (x)
-#define BSWAP_64_BITOP(x) (x)
-#define BSWAP_ULONG(x) (x)
-#else
-#define CRYPTO_BSWAP2(x) (x)
-#define CRYPTO_BSWAP4(x) (x)
-#define CRYPTO_BSWAP8(x) (x)
-#define BSWAP_16(x) (CRYPTO_bswap2(x))
-#define BSWAP_32(x) (CRYPTO_bswap4(x))
-#define BSWAP_64(x) (CRYPTO_bswap8(x))
-#define BSWAP_16_BITOP(x) \
-  (((((uint16_t)(x)) & 0x00ff) << 8) | \
-   ((((uint16_t)(x)) >> 8) & 0x00ff))
-#define BSWAP_32_BITOP(x) \
-  (((((uint32_t)(x)) & 0x000000ff) << 24) | \
-   ((((uint32_t)(x)) & 0x0000ff00) <<  8) | \
-   ((((uint32_t)(x)) >>  8) & 0x0000ff00) | \
-   ((((uint32_t)(x)) >> 24) & 0x000000ff))
-#define BSWAP_64_BITOP(x) \
-  ((uint64_t)BSWAP_32_BITOP((uint64_t)(x) & 0x00000000ffffffff) << 32 | \
-   (uint64_t)BSWAP_32_BITOP((uint64_t)(x) >> 32))
-#if defined(OPENSSL_64_BIT)
-#define BSWAP_ULONG(x) BSWAP_64(x)
-#elif defined(OPENSSL_32_BIT)
-#define BSWAP_ULONG(x) BSWAP_32(x)
-#else
-#error "Must define either OPENSSL_32_BIT or OPENSSL_64_BIT"
-#endif
-#endif
 
 // Language bug workarounds.
 //

@@ -20,6 +20,15 @@
 #include "../internal.h"
 #include "./internal.h"
 
+static void bswap8_inplace_if_big_endian(uint64_t *state, size_t len) {
+#if __BYTE_ORDER == __BIG_ENDIAN
+  for (size_t i = 0; i < len; i++) {
+    state[i] = CRYPTO_bswap8(state[i]);
+  }
+#else
+  (void)state;
+#endif
+}
 
 // keccak_f implements the Keccak-1600 permutation as described at
 // https://keccak.team/keccak_specs_summary.html. Each lane is represented as a
@@ -188,11 +197,7 @@ void BORINGSSL_keccak_absorb(struct BORINGSSL_keccak_st *ctx, const uint8_t *in,
   const size_t rate_words = ctx->rate_bytes / 8;
   // XOR the input. Accessing |ctx->state| as a |uint8_t*| is allowed by strict
   // aliasing because we require |uint8_t| to be a character type.
-#if __BYTE_ORDER == __BIG_ENDIAN
-  for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
-    ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
-  }
-#endif
+  bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
   uint8_t *state_bytes = (uint8_t *)ctx->state;
 
   // Absorb partial block.
@@ -252,11 +257,7 @@ static void keccak_finalize(struct BORINGSSL_keccak_st *ctx) {
   uint8_t *state_bytes = (uint8_t *)ctx->state;
   state_bytes[ctx->absorb_offset] ^= terminator;
   state_bytes[ctx->rate_bytes - 1] ^= 0x80;
-#if __BYTE_ORDER == __BIG_ENDIAN
-  for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
-    ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
-  }
-#endif
+  bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
   keccak_f(ctx->state);
 }
 
@@ -270,11 +271,7 @@ void BORINGSSL_keccak_squeeze(struct BORINGSSL_keccak_st *ctx, uint8_t *out,
   // Accessing |ctx->state| as a |uint8_t*| is allowed by strict aliasing
   // because we require |uint8_t| to be a character type.
   const uint8_t *state_bytes = (const uint8_t *)ctx->state;
-#if __BYTE_ORDER == __BIG_ENDIAN
-  for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
-    ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
-  }
-#endif
+  bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
   while (out_len) {
     if (ctx->squeeze_offset == ctx->rate_bytes) {
       keccak_f(ctx->state);
@@ -291,23 +288,11 @@ void BORINGSSL_keccak_squeeze(struct BORINGSSL_keccak_st *ctx, uint8_t *out,
     out_len -= todo;
     ctx->squeeze_offset += todo;
     if (ctx->squeeze_offset == ctx->rate_bytes) {
-#if __BYTE_ORDER == __BIG_ENDIAN
-      for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
-        ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
-      }
-#endif
+      bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
       keccak_f(ctx->state);
-#if __BYTE_ORDER == __BIG_ENDIAN
-      for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
-        ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
-      }
-#endif
+      bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
       ctx->squeeze_offset = 0;
     }
   }
-#if __BYTE_ORDER == __BIG_ENDIAN
-  for (size_t i = 0; i < sizeof(ctx->state) / sizeof(uint64_t); i++) {
-    ctx->state[i] = CRYPTO_bswap8(ctx->state[i]);
-  }
-#endif
+  bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
 }
