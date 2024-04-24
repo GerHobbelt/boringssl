@@ -94,6 +94,7 @@ void bn_big_endian_to_words(BN_ULONG *out, size_t out_len, const uint8_t *in,
   OPENSSL_memset(out, 0, out_len * sizeof(BN_ULONG));
 }
 
+#if __BYTE_ORDER == __BIG_ENDIAN
 static void bn_little_endian_to_big_endian_words(BN_ULONG *out, size_t out_len, const uint8_t *in,
                                                  size_t in_len) {
   const size_t in_tot = in_len;
@@ -118,6 +119,7 @@ static void bn_little_endian_to_big_endian_words(BN_ULONG *out, size_t out_len, 
   // The caller should have sized the output to avoid truncation.
   assert(in_len == 0);
 }
+#endif
 
 BIGNUM *BN_bin2bn(const uint8_t *in, size_t len, BIGNUM *ret) {
   BIGNUM *bn = NULL;

@@ -345,11 +345,11 @@ static inline uint32_t aes_nohw_word_from_bytes(uint8_t a0, uint8_t a1,
 
 static inline void aes_nohw_compact_block(aes_word_t out[AES_NOHW_BLOCK_WORDS],
                                           const uint8_t in[16]) {
-  out[0] = CRYPTO_load_u64_le(in);
-  out[1] = CRYPTO_load_u64_le(in + 8);
 #if defined(OPENSSL_SSE2)
   // No conversions needed.
 #elif defined(OPENSSL_64_BIT)
+  out[0] = CRYPTO_load_u64_le(in);
+  out[1] = CRYPTO_load_u64_le(in + 8);
   uint64_t a0 = aes_nohw_compact_word(out[0]);
   uint64_t a1 = aes_nohw_compact_word(out[1]);
   out[0] = (a0 & UINT64_C(0x00000000ffffffff)) | (a1 << 32);
