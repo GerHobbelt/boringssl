@@ -30,6 +30,7 @@ import (
 )
 
 var verbose = flag.Bool("verbose", false, "If true, prints a status message at the end.")
+var outputFile = flag.String("outputfile", "", "Specify output file.")
 
 // libraryNames must be kept in sync with the enum in err.h. The generated code
 // will contain static assertions to enforce this.
@@ -237,7 +238,19 @@ func main() {
 		}
 	}
 
-	out := os.Stdout
+	var out stringWriter
+
+	if *outputFile != "" {
+		file, err := os.OpenFile(*outputFile, os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+
+		out = file
+	} else {
+		out = os.Stdout
+	}
 
 	out.WriteString(`/* Copyright (c) 2015, Google Inc.
  *

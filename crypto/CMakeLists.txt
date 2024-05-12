@@ -35,7 +35,7 @@ perlasm(CRYPTO_SOURCES x86_64 test/trampoline-x86_64 test/asm/trampoline-x86_64.
 
 add_custom_command(
   OUTPUT err_data.c
-  COMMAND ${GO_EXECUTABLE} run err_data_generate.go > ${CMAKE_CURRENT_BINARY_DIR}/err_data.c
+  COMMAND ${GO_EXECUTABLE} run err_data_generate.go --outputfile ${CMAKE_CURRENT_BINARY_DIR}/err_data.c
   DEPENDS
   err/err_data_generate.go
   err/asn1.errordata
