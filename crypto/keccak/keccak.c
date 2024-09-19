@@ -197,16 +197,17 @@ void BORINGSSL_keccak_absorb(struct BORINGSSL_keccak_st *ctx, const uint8_t *in,
   const size_t rate_words = ctx->rate_bytes / 8;
   // XOR the input. Accessing |ctx->state| as a |uint8_t*| is allowed by strict
   // aliasing because we require |uint8_t| to be a character type.
-  bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
   uint8_t *state_bytes = (uint8_t *)ctx->state;
 
   // Absorb partial block.
   if (ctx->absorb_offset != 0) {
     assert(ctx->absorb_offset < ctx->rate_bytes);
     size_t first_block_len = ctx->rate_bytes - ctx->absorb_offset;
+    bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
     for (size_t i = 0; i < first_block_len && i < in_len; i++) {
       state_bytes[ctx->absorb_offset + i] ^= in[i];
     }
+    bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
 
     // This input didn't fill the block.
     if (first_block_len > in_len) {
@@ -231,9 +232,11 @@ void BORINGSSL_keccak_absorb(struct BORINGSSL_keccak_st *ctx, const uint8_t *in,
 
   // Absorb partial block.
   assert(in_len < ctx->rate_bytes);
+  bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
   for (size_t i = 0; i < in_len; i++) {
     state_bytes[i] ^= in[i];
   }
+  bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
   ctx->absorb_offset = in_len;
 }
 
@@ -254,6 +257,7 @@ static void keccak_finalize(struct BORINGSSL_keccak_st *ctx) {
 
   // XOR the terminator. Accessing |ctx->state| as a |uint8_t*| is allowed by
   // strict aliasing because we require |uint8_t| to be a character type.
+  bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
   uint8_t *state_bytes = (uint8_t *)ctx->state;
   state_bytes[ctx->absorb_offset] ^= terminator;
   state_bytes[ctx->rate_bytes - 1] ^= 0x80;
@@ -270,11 +274,13 @@ void BORINGSSL_keccak_squeeze(struct BORINGSSL_keccak_st *ctx, uint8_t *out,
 
   // Accessing |ctx->state| as a |uint8_t*| is allowed by strict aliasing
   // because we require |uint8_t| to be a character type.
-  const uint8_t *state_bytes = (const uint8_t *)ctx->state;
   bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
+  const uint8_t *state_bytes = (const uint8_t *)ctx->state;
   while (out_len) {
     if (ctx->squeeze_offset == ctx->rate_bytes) {
+      bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
       keccak_f(ctx->state);
+      bswap8_inplace_if_big_endian(ctx->state, sizeof(ctx->state) / sizeof(uint64_t));
       ctx->squeeze_offset = 0;
     }
 
