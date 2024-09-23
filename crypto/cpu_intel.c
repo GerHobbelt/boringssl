@@ -118,6 +118,7 @@ static uint64_t OPENSSL_xgetbv(uint32_t xcr) {
 #endif
 }
 
+#if 0
 // handle_cpu_env applies the value from |in| to the CPUID values in |out[0]|
 // and |out[1]|. See the comment in |OPENSSL_cpuid_setup| about this.
 static void handle_cpu_env(uint32_t *out, const char *in) {
@@ -149,6 +150,7 @@ static void handle_cpu_env(uint32_t *out, const char *in) {
     out[1] = v >> 32;
   }
 }
+#endif
 
 void OPENSSL_cpuid_setup(void) {
   // Determine the vendor and maximum input value.
@@ -296,6 +298,7 @@ void OPENSSL_cpuid_setup(void) {
   OPENSSL_ia32cap_P[2] = extended_features[0];
   OPENSSL_ia32cap_P[3] = extended_features[1];
 
+#if 0
   const char *env1, *env2;
   env1 = getenv("OPENSSL_ia32cap");
   if (env1 == NULL) {
@@ -321,6 +324,7 @@ void OPENSSL_cpuid_setup(void) {
   if (env2 != NULL) {
     handle_cpu_env(&OPENSSL_ia32cap_P[2], env2 + 1);
   }
+#endif
 }
 
 #endif  // !OPENSSL_NO_ASM && (OPENSSL_X86 || OPENSSL_X86_64)
