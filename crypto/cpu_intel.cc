@@ -146,6 +146,9 @@ void OPENSSL_adjust_ia32cap(uint32_t cap[4], const char *env) {
     handle_cpu_env(cap + 2, env + 1, /*is_last=*/true);
   }
 }
+#else
+void OPENSSL_adjust_ia32cap(uint32_t cap[4], const char *env) {
+}
 #endif
 
 void OPENSSL_cpuid_setup(void) {
